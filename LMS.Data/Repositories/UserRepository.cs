@@ -1,13 +1,18 @@
 ﻿using LMS.Data.Entities;
-using LMS.Data.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace LMS.Data.Repositories
 {
-    public class UserRepository(AppDbContext context) : IUserRepository
+    public class UserRepository : IUserRepository
     {
+        private readonly AppDbContext context;
 
-        public async Task<ApplicationUser> GetByIdAsync(string id)
+        public UserRepository(AppDbContext context)
+        {
+            this.context = context;
+        }
+
+        public async Task<User> GetByIdAsync(string id)
         {
             return await context.Users
                 .Include(u => u.TeacherProfile)
@@ -15,32 +20,7 @@ namespace LMS.Data.Repositories
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
 
-        public async Task<IEnumerable<ApplicationUser>> GetAllAsync()
-        {
-            return await context.Users
-                .Include(u => u.TeacherProfile)
-                .Include(u => u.StudentProfile)
-                .ToListAsync();
-        }
-
-        //public async Task<IEnumerable<ApplicationUser>> GetByRoleAsync(string role)
-        //{
-        //    var userRole = await context.Roles.FirstOrDefaultAsync(r => r.Name == role);
-        //    if (userRole == null) return new List<ApplicationUser>();
-
-        //    var userRoleIds = await context.UserRoles
-        //        .Where(ur => ur.RoleId == userRole.Id)
-        //        .Select(ur => ur.UserId)
-        //        .ToListAsync();
-
-        //    return await context.Users
-        //        .Where(u => userRoleIds.Contains(u.Id))
-        //        .Include(u => u.TeacherProfile)
-        //        .Include(u => u.StudentProfile)
-        //        .ToListAsync();
-        //}
-
-        public async Task<ApplicationUser> GetByEmailAsync(string email)
+        public async Task<User> GetByEmailAsync(string email)
         {
             return await context.Users
                 .Include(u => u.TeacherProfile)
@@ -48,31 +28,65 @@ namespace LMS.Data.Repositories
                 .FirstOrDefaultAsync(u => u.Email == email);
         }
 
-        public async Task AddAsync(ApplicationUser user)
+        public async Task<User> GetByUserNameAsync(string userName)
         {
-            await context.Users.AddAsync(user);
-            await context.SaveChangesAsync();
+            return await context.Users
+                .Include(u => u.TeacherProfile)
+                .Include(u => u.StudentProfile)
+                .FirstOrDefaultAsync(u => u.UserName == userName);
         }
 
-        public async Task UpdateAsync(ApplicationUser user)
+        public async Task<IEnumerable<User>> GetAllAsync()
         {
+            return await context.Users
+                .Include(u => u.TeacherProfile)
+                .Include(u => u.StudentProfile)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<User>> GetByRoleAsync(string role)
+        {
+            return await context.Users
+                .Include(u => u.TeacherProfile)
+                .Include(u => u.StudentProfile)
+                 .Where(u => u.Roles != null &&
+                u.Roles.Any(r => r.Equals(role, StringComparison.OrdinalIgnoreCase)))
+                .ToListAsync();
+        }
+
+        public async Task<User> CreateAsync(User user)
+        {
+            context.Users.Add(user);
+            await context.SaveChangesAsync();
+            return user;
+        }
+
+        public async Task<User> UpdateAsync(User user)
+        {
+            user.UpdatedAt = DateTime.UtcNow;
             context.Users.Update(user);
             await context.SaveChangesAsync();
+            return user;
         }
 
-        public async Task DeleteAsync(string id)
+        public async Task<bool> DeleteAsync(string id)
         {
             var user = await GetByIdAsync(id);
-            if (user != null)
-            {
-                context.Users.Remove(user);
-                await context.SaveChangesAsync();
-            }
+            if (user == null) return false;
+
+            context.Users.Remove(user);
+            await context.SaveChangesAsync();
+            return true;
         }
 
-        public async Task<bool> ExistsAsync(string id)
+        public async Task<bool> EmailExistsAsync(string email)
         {
-            return await context.Users.AnyAsync(u => u.Id == id);
+            return await context.Users.AnyAsync(u => u.Email == email);
+        }
+
+        public async Task<bool> UserNameExistsAsync(string userName)
+        {
+            return await context.Users.AnyAsync(u => u.UserName == userName);
         }
     }
 }

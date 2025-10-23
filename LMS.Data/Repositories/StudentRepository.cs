@@ -1,67 +1,87 @@
 ﻿using LMS.Data.Entities;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace LMS.Data.Repositories
 {
-    public class StudentProfileRepository(AppDbContext context) 
-        : IStudentProfileRepository
+    public class StudentRepository : IStudentRepository
     {
+        private readonly AppDbContext context;
 
-        public async Task<StudentProfile> GetByIdAsync(int id)
+        public StudentRepository(AppDbContext context)
+        {
+            this.context = context;
+        }
+
+        public async Task<Student> GetByIdAsync(Guid id)
         {
             return await context.Students
                 .Include(s => s.User)
+                .Include(s => s.Enrollments)
                 .FirstOrDefaultAsync(s => s.Id == id);
         }
 
-        public async Task<StudentProfile> GetByUserIdAsync(string userId)
+        public async Task<Student> GetByUserIdAsync(string userId)
         {
             return await context.Students
                 .Include(s => s.User)
+                .Include(s => s.Enrollments)
                 .FirstOrDefaultAsync(s => s.UserId == userId);
         }
 
-        public async Task<IEnumerable<StudentProfile>> GetAllAsync()
+        public async Task<Student> GetByStudentIdAsync(string studentId)
+        {
+            return await context.Students
+                .Include(s => s.User)
+                .FirstOrDefaultAsync(s => s.StudentId == studentId);
+        }
+
+        public async Task<IEnumerable<Student>> GetAllAsync()
         {
             return await context.Students
                 .Include(s => s.User)
                 .ToListAsync();
         }
 
-        public async Task AddAsync(StudentProfile studentProfile)
+        public async Task<Student> CreateAsync(Student student)
         {
-            await context.Students.AddAsync(studentProfile);
+            context.Students.Add(student);
             await context.SaveChangesAsync();
+            return student;
         }
 
-        public async Task UpdateAsync(StudentProfile studentProfile)
+        public async Task<Student> UpdateAsync(Student student)
         {
-            context.Students.Update(studentProfile);
+            context.Students.Update(student);
             await context.SaveChangesAsync();
+            return student;
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task<bool> DeleteAsync(Guid id)
         {
-            var studentProfile = await GetByIdAsync(id);
-            if (studentProfile != null)
+            var student = await GetByIdAsync(id);
+            if (student == null) return false;
+
+            context.Students.Remove(student);
+            await context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<string> GenerateStudentIdAsync()
+        {
+            var year = DateTime.Now.Year;
+            var lastStudent = await context.Students
+                .Where(s => s.StudentId.StartsWith($"STU{year}"))
+                .OrderByDescending(s => s.StudentId)
+                .FirstOrDefaultAsync();
+
+            var nextNumber = 1;
+            if (lastStudent != null)
             {
-                context.Students.Remove(studentProfile);
-                await context.SaveChangesAsync();
+                var lastNumber = int.Parse(lastStudent.StudentId.Substring(7)); // STU2025001 -> 001
+                nextNumber = lastNumber + 1;
             }
-            
-        }
 
-        public async Task<bool> ExistsAsync(int id)
-        {
-            return await context.Students.AnyAsync(s => s.Id == id);
-        }
-
-        public async Task<bool> ExistsForUserAsync(string userId)
-        {
-            return await context.Students.AnyAsync(s => s.UserId == userId);
+            return $"STU{year}{nextNumber:D3}"; // STU2025001, STU2025002, ...
         }
     }
 }

@@ -1,16 +1,24 @@
 ﻿using LMS.Data.Entities;
 
-namespace LMS.Data.Repositories.Interfaces
+public interface IUserRepository
 {
-    public interface IUserRepository
-    {
-        Task<ApplicationUser> GetByIdAsync(string id);
-        Task<IEnumerable<ApplicationUser>> GetAllAsync();
-        //Task<IEnumerable<ApplicationUser>> GetByRoleAsync(string role);
-        Task<ApplicationUser> GetByEmailAsync(string email);
-        Task AddAsync(ApplicationUser user);
-        Task UpdateAsync(ApplicationUser user);
-        Task DeleteAsync(string id);
-        Task<bool> ExistsAsync(string id);
-    }
+    // GET operations
+    Task<User> GetByIdAsync(string id);
+    Task<User> GetByEmailAsync(string email);
+    Task<User> GetByUserNameAsync(string userName);
+    Task<IEnumerable<User>> GetAllAsync();
+    Task<IEnumerable<User>> GetByRoleAsync(string role);
+
+    // CREATE operations
+    Task<User> CreateAsync(User user);
+
+    // UPDATE operations  
+    Task<User> UpdateAsync(User user);
+
+    // DELETE operations
+    Task<bool> DeleteAsync(string id);
+
+    // AUTH operations
+    Task<bool> EmailExistsAsync(string email);
+    Task<bool> UserNameExistsAsync(string userName);
 }

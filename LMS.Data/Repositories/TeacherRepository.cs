@@ -4,60 +4,59 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LMS.Data.Repositories
 {
-    public class TeacherProfileRepository(AppDbContext context) : ITeacherProfileRepository
+    public class TeacherRepository : ITeacherRepository
     {
+        private readonly AppDbContext context;
 
-        public async Task<TeacherProfile> GetByIdAsync(int id)
+        public TeacherRepository(AppDbContext context)
         {
-            return await context.Teachers
-                .Include(t => t.User)
-                .FirstOrDefaultAsync(t => t.Id == id);
+            this.context = context;
         }
 
-        public async Task<TeacherProfile> GetByUserIdAsync(string userId)
+        public async Task<Teacher> GetByIdAsync(Guid id)
         {
             return await context.Teachers
                 .Include(t => t.User)
+                .Include(t => t.Courses)
+                .FirstOrDefaultAsync(t => t.Id == id);
+        }
+        public async Task<Teacher> GetByUserIdAsync(string userId)
+        {
+            return await context.Teachers
+                .Include(t => t.User)
+                .Include(t => t.Courses)
                 .FirstOrDefaultAsync(t => t.UserId == userId);
         }
 
-        public async Task<IEnumerable<TeacherProfile>> GetAllAsync()
+        public async Task<IEnumerable<Teacher>> GetAllAsync()
         {
             return await context.Teachers
                 .Include(t => t.User)
                 .ToListAsync();
         }
 
-        public async Task AddAsync(TeacherProfile teacherProfile)
+        public async Task<Teacher> CreateAsync(Teacher teacher)
         {
-            await context.Teachers.AddAsync(teacherProfile);
+            context.Teachers.Add(teacher);
             await context.SaveChangesAsync();
+            return teacher;
         }
 
-        public async Task UpdateAsync(TeacherProfile teacherProfile)
+        public async Task<Teacher> UpdateAsync(Teacher teacher)
         {
-            context.Teachers.Update(teacherProfile);
+            context.Teachers.Update(teacher);
             await context.SaveChangesAsync();
+            return teacher;
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task<bool> DeleteAsync(Guid id)
         {
-            var teacherProfile = await GetByIdAsync(id);
-            if (teacherProfile != null)
-            {
-                context.Teachers.Remove(teacherProfile);
-                await context.SaveChangesAsync();
-            }
-        }
+            var teacher = await GetByIdAsync(id);
+            if (teacher == null) return false;
 
-        public async Task<bool> ExistsAsync(int id)
-        {
-            return await context.Teachers.AnyAsync(t => t.Id == id);
-        }
-
-        public async Task<bool> ExistsForUserAsync(string userId)
-        {
-            return await context.Teachers.AnyAsync(t => t.UserId == userId);
+            context.Teachers.Remove(teacher);
+            await context.SaveChangesAsync();
+            return true;
         }
     }
 }

@@ -1,131 +1,115 @@
-﻿using LMS.Logic.Exceptions;
+﻿using LMS.Data.Repositories;
+using LMS.Logic.Exceptions;
 using LMS.Logic.Services;
-using LMS.Shared.Dtos.UserDtos;
+using LMS.Shared.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Threading.Tasks;
+using System.Linq;
 
 namespace LMS.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    //[Authorize]
-    public class UsersController : ControllerBase
+    public class UsersController(IUserService userService,
+        ILogger<UsersController> logger,
+        IUserRepository userRepository) : ControllerBase
+
     {
-        private readonly IUserService userService;
-        private readonly ILogger<UsersController> logger;
-
-        public UsersController(IUserService userService, ILogger<UsersController> logger)
-        {
-            this.userService = userService;
-            this.logger = logger;
-        }
-
         [HttpGet]
-        //[Authorize(Roles = "Admin")]
         public async Task<ActionResult<IEnumerable<UserDto>>> GetAllUsers()
         {
-            try
-            {
-                var users = await userService.GetAllUsersAsync();
-                return Ok(users);
-            }
-            catch (Exception ex)
-            {
-                this.logger.LogError(ex, "Error getting all users");
-                return StatusCode(500, "Internal server error");
-            }
+            var users = await userService.GetAllAsync();
+            return Ok(users);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<UserDto>> GetUserById(string id)
         {
-             var user = await userService.GetUserByIdAsync(id);
-            //var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            //var isAdmin = User.IsInRole("Admin");
-
-            //if (currentUserId != id && !isAdmin)
-            //throw new BadRequestException(message: "Only Admin and the user themselves can update this user.");
-            
-
+            var user = await userService.GetByIdAsync(id);
             return Ok(user);
-            
         }
 
-        //[HttpGet("role/{role}")]
-        //public async Task<ActionResult<IEnumerable<UserDto>>> GetUsersByRole(string role)
-        //{
-        //    try
-        //    {
-        //        var users = await userService.GetUsersByRoleAsync(role);
-        //        return Ok(users);
-        //    }
-        //    catch (ArgumentException ex)
-        //    {
-        //        return BadRequest(ex.Message);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        this.logger.LogError(ex, $"Error getting users with role {role}");
-        //        return StatusCode(500, "Internal server error");
-        //    }
-        //}
-
-        [HttpPost]
-        public async Task<ActionResult> CreateUser([FromBody] CreateUserDto createUserDto)
+        [HttpGet("email/{email}")]
+        public async Task<ActionResult<UserDto>> GetUserByEmail(string email)
         {
-     
-                logger.LogInformation("Creating new user");
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(new
-                    {
-                        error = "Invalid model",
-                        details = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)
-                    });
-                }
+            var user = await userService.GetByEmailAsync(email);
+            return Ok(user);
+        }
 
-                // Required field validation
-                if (string.IsNullOrEmpty(createUserDto.Email) || string.IsNullOrEmpty(createUserDto.Password))
-                {
-                    return BadRequest(new { error = "Email and Password are required" });
-                }
-
-                var user = await userService.CreateUserAsync(createUserDto);
-                return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
+        [HttpGet("role/{role}")]
+        public async Task<ActionResult<IEnumerable<UserDto>>> GetUsersByRole(string role)
+        {
+            var users = await userService.GetByRoleAsync(role);
+            return Ok(users);
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<UserDto>> UpdateUser(string id, UpdateUserDto updateUserDto)
+        public async Task<ActionResult<UserDto>> UpdateUser(string id, [FromBody] UpdateUserDto updateUserDto)
         {
-
-                //var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                //var isAdmin = User.IsInRole("Admin");
-
-                //if (currentUserId != id && !isAdmin)
-                //    throw new BadRequestException(message: "Only Admin and the user themselves can update this user.");
-
-            var user = await userService.UpdateUserAsync(id, updateUserDto);
-                return Ok(user);
+            var user = await userService.UpdateAsync(id, updateUserDto);
+            return Ok(user);
         }
 
         [HttpDelete("{id}")]
-        //[Authorize(Roles = "Admin")]
         public async Task<ActionResult> DeleteUser(string id)
         {
-                await userService.DeleteUserAsync(id);
-                return NoContent();
-            
+            await userService.DeleteAsync(id);
+            return NoContent();
+        }
+        //[Authorize(Roles = "Admin")]
+        [HttpPut("{id}/role")]
+        public async Task<IActionResult> UpdateUserRole(Guid id, [FromBody] string newRole)
+        {
+            var currentUserId = User.FindFirst("id")?.Value;
+            var currentUserRole = User.FindFirst("role")?.Value;
+
+            // 1️⃣ Admin yoki o‘zi bo‘lishi shart
+            if (currentUserRole != "Admin" && currentUserId != id.ToString())
+                return Forbid("❌ Sizda bu amalni bajarish uchun ruxsat yo‘q.");
+
+            var user = await userRepository.GetByIdAsync(id.ToString());
+            if (user == null)
+                throw new NotFoundException("❌ User not found");
+            if (!user.Roles.Contains(newRole))
+                user.Roles.Add(newRole);
+            await userRepository.UpdateAsync(user);
+
+            return Ok(new
+            {
+                message = "✅ User role successfully updated",
+                user.Id,
+                user.UserName,
+                user.Roles
+            });
         }
 
-        [HttpPost("{userId}/assign-role/{role}")]
         //[Authorize(Roles = "Admin")]
-        public async Task<ActionResult> AssignRole(string userId, string role)
+        [HttpPost("{id}/add-role")]
+        public async Task<IActionResult> AddRoleToUser(Guid id, [FromBody] string roleToAdd)
         {
+            var user = await userRepository.GetByIdAsync(id.ToString());
+            if (user == null)
+                throw new NotFoundException("❌ User not found");
 
-                await userService.AssignRoleAsync(userId, role);
-                return Ok($"Role {role} assigned to user {userId} successfully");
+            bool hasRole = user.Roles != null && user.Roles.Any(r =>
+            string.Equals(r, roleToAdd, StringComparison.OrdinalIgnoreCase));
+
+            if (hasRole)
+                return BadRequest("⚠️ User already has this role");
+
+            if (user.Roles == null)
+                user.Roles = new List<string>();
+
+            user.Roles.Add(roleToAdd);
+            await userRepository.UpdateAsync(user);
+
+            return Ok(new
+            {
+                message = "✅ Role successfully added to user",
+                user.Id,
+                user.UserName,
+                user.Roles
+            });
         }
     }
 }

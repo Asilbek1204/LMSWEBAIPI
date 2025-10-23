@@ -1,17 +1,14 @@
-﻿using LMS.Shared.Dtos.UserDtos;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using LMS.Shared.Dtos;
 
 namespace LMS.Logic.Services
 {
     public interface IUserService
     {
-        Task<UserDto> GetUserByIdAsync(string id);
-        Task<IEnumerable<UserDto>> GetAllUsersAsync();
-        //Task<IEnumerable<UserDto>> GetUsersByRoleAsync(string role);
-        Task<UserDto> CreateUserAsync(CreateUserDto createUserDto);
-        Task<UserDto> UpdateUserAsync(string id, UpdateUserDto updateUserDto);
-        Task<bool> DeleteUserAsync(string id);
-        Task<bool> AssignRoleAsync(string userId, string role);
+        Task<UserDto> GetByIdAsync(string id);
+        Task<UserDto> GetByEmailAsync(string email);
+        Task<IEnumerable<UserDto>> GetAllAsync();
+        Task<IEnumerable<UserDto>> GetByRoleAsync(string role);
+        Task<UserDto> UpdateAsync(string id, UpdateUserDto updateUserDto);
+        Task<bool> DeleteAsync(string id);
     }
 }

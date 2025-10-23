@@ -1,74 +1,111 @@
-﻿using LMS.Data.Entities;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using LMS.Data.Entities;
 
 namespace LMS.Data
 {
-    public class AppDbContext(DbContextOptions<AppDbContext> options) 
-        : IdentityDbContext<ApplicationUser>(options)
+    public class AppDbContext : DbContext
     {
-        public DbSet<TeacherProfile> Teachers { get; set; } = null!;
-        public DbSet<StudentProfile> Students { get; set; } = null!;
-        //public DbSet<Course> Courses { get; set; }
-        //public DbSet<Enrollment> Enrollments { get; set; }
-        //public DbSet<Category> Categories { get; set; }
-        //public DbSet<Module> Modules { get; set; }
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-
+        // Database jadvallari
+        public DbSet<User> Users { get; set; }
+        public DbSet<Student> Students { get; set; }
+        public DbSet<Teacher> Teachers { get; set; }
+        public DbSet<Course> Courses { get; set; }
+        public DbSet<Category> Categories { get; set; }
+        public DbSet<Module> Modules { get; set; }
+        public DbSet<Enrollment> Enrollments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
-            builder.Entity<ApplicationUser>(entity => entity.ToTable("Users"));
-            builder.Entity<IdentityRole>(entity => entity.ToTable("Roles"));
-            builder.Entity<IdentityUserRole<string>>(entity => entity.ToTable("UserRoles"));
-            builder.Entity<IdentityUserClaim<string>>(entity => entity.ToTable("UserClaims"));
-            builder.Entity<IdentityUserLogin<string>>(entity => entity.ToTable("UserLogins"));
-            builder.Entity<IdentityRoleClaim<string>>(entity => entity.ToTable("RoleClaims"));
-            builder.Entity<IdentityUserToken<string>>(entity => entity.ToTable("UserTokens"));
+            // User -> Teacher: One-to-One
+            // Bir user faqat bitta teacher profile ga ega bo'ladi
+            builder.Entity<Teacher>()
+                .HasOne(t => t.User)                      // Teacher bir User ga bog'lanadi
+                .WithOne(u => u.TeacherProfile)           // User bir TeacherProfile ga bog'lanadi  
+                .HasForeignKey<Teacher>(t => t.UserId)    // Bog'lanish UserId orqali amalga oshadi
+                .OnDelete(DeleteBehavior.Cascade);        // User o'chirilsa, Teacher ham o'chadi
 
-            builder.Entity<TeacherProfile>()
-                .HasOne(t => t.User)
-                .WithOne(u => u.TeacherProfile)
-                .HasForeignKey<TeacherProfile>(t => t.UserId);
+            // User -> Student: One-to-One  
+            // Bir user faqat bitta student profile ga ega bo'ladi
+            builder.Entity<Student>()
+                .HasOne(s => s.User)                      // Student bir User ga bog'lanadi
+                .WithOne(u => u.StudentProfile)           // User bir StudentProfile ga bog'lanadi
+                .HasForeignKey<Student>(s => s.UserId)    // Bog'lanish UserId orqali amalga oshadi
+                .OnDelete(DeleteBehavior.Cascade);        // User o'chirilsa, Student ham o'chadi
 
+            // ==================== TEACHER BOG'LANISHLARI ====================
 
-            builder.Entity<StudentProfile>()
-                .HasOne(s => s.User)
-                .WithOne(u => u.StudentProfile)
-                .HasForeignKey<StudentProfile>(s => s.UserId);
-
-         /*   // Course va TeacherProfile o'rtasida many-to-one
+            // Teacher -> Course: One-to-Many
+            // Bir o'qituvchi ko'p kurslar yaratishi mumkin
             builder.Entity<Course>()
-                .HasOne(c => c.Teacher)
-                .WithMany(t => t.Courses)
-                .HasForeignKey(c => c.TeacherId);
+                .HasOne(c => c.Teacher)                   // Course bir Teacher ga bog'lanadi
+                .WithMany(t => t.Courses)                 // Teacher ko'p Course lar ga bog'lanadi
+                .HasForeignKey(c => c.TeacherId)          // Bog'lanish TeacherId orqali
+                .OnDelete(DeleteBehavior.Restrict);       // Teacher o'chirilsa, Course lar o'chmaydi
 
-            // Enrollment va Course o'rtasida many-to-one
+            // ==================== STUDENT BOG'LANISHLARI ====================
+
+            // Student -> Enrollment: One-to-Many
+            // Bir o'quvchi ko'p kurslarga yozilishi mumkin
             builder.Entity<Enrollment>()
-                .HasOne(e => e.Course)
-                .WithMany(c => c.Enrollments)
-                .HasForeignKey(e => e.CourseId);
+                .HasOne(e => e.Student)                   // Enrollment bir Student ga bog'lanadi
+                .WithMany(s => s.Enrollments)             // Student ko'p Enrollment lar ga bog'lanadi
+                .HasForeignKey(e => e.StudentId)          // Bog'lanish StudentId orqali
+                .OnDelete(DeleteBehavior.Cascade);        // Student o'chirilsa, Enrollment lar ham o'chadi
 
-            // Enrollment va StudentProfile o'rtasida many-to-one
-            builder.Entity<Enrollment>()
-                .HasOne(e => e.Student)
-                .WithMany(s => s.Enrollments)
-                .HasForeignKey(e => e.StudentId);
+            // ==================== COURSE BOG'LANISHLARI ====================
 
-            // Course va Category o'rtasida many-to-one
+            // Course -> Category: Many-to-One
+            // Ko'p kurslar bir kategoriyaga tegishli bo'lishi mumkin
             builder.Entity<Course>()
-                .HasOne(c => c.Category)
-                .WithMany(cat => cat.Courses)
-                .HasForeignKey(c => c.CategoryId);
+                .HasOne(c => c.Category)                  // Course bir Category ga bog'lanadi
+                .WithMany(cat => cat.Courses)             // Category ko'p Course lar ga bog'lanadi
+                .HasForeignKey(c => c.CategoryId)         // Bog'lanish CategoryId orqali
+                .OnDelete(DeleteBehavior.Restrict);       // Category o'chirilsa, Course lar o'chmaydi
 
-            // Module va Course o'rtasida many-to-one
+            // Course -> Enrollment: One-to-Many
+            // Bir kursga ko'p o'quvchilar yozilishi mumkin
+            builder.Entity<Enrollment>()
+                .HasOne(e => e.Course)                    // Enrollment bir Course ga bog'lanadi
+                .WithMany(c => c.Enrollments)             // Course ko'p Enrollment lar ga bog'lanadi
+                .HasForeignKey(e => e.CourseId)           // Bog'lanish CourseId orqali
+                .OnDelete(DeleteBehavior.Cascade);        // Course o'chirilsa, Enrollment lar ham o'chadi
+
+            // Course -> Module: One-to-Many
+            // Bir kursda ko'p modullar (darslar) bo'lishi mumkin
             builder.Entity<Module>()
-                .HasOne(m => m.Course)
-                .WithMany(c => c.Modules)
-                .HasForeignKey(m => m.CourseId); */
+                .HasOne(m => m.Course)                    // Module bir Course ga bog'lanadi
+                .WithMany(c => c.Modules)                 // Course ko'p Module lar ga bog'lanadi
+                .HasForeignKey(m => m.CourseId)           // Bog'lanish CourseId orqali
+                .OnDelete(DeleteBehavior.Cascade);        // Course o'chirilsa, Module lar ham o'chadi
+
+            // ==================== UNIQUE CONSTRAINTS ====================
+            // Har bir email va username unique bo'lishi kerak
+            builder.Entity<User>()
+                .HasIndex(u => u.Email)
+                .IsUnique();
+
+            builder.Entity<User>()
+                .HasIndex(u => u.UserName)
+                .IsUnique();
+
+            // Har bir student ID unique bo'lishi kerak
+            builder.Entity<Student>()
+                .HasIndex(s => s.StudentId)
+                .IsUnique();
+
+            // Har bir kategoriya nomi unique bo'lishi kerak
+            builder.Entity<Category>()
+                .HasIndex(c => c.Name)
+                .IsUnique();
+
+            // Bir o'quvchi bir kursga faqat bir marta yozilishi mumkin
+            builder.Entity<Enrollment>()
+                .HasIndex(e => new { e.CourseId, e.StudentId })
+                .IsUnique();
         }
     }
 }
