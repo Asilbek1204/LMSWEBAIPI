@@ -1,6 +1,7 @@
 ﻿using LMS.Logic.Services;
 using LMS.Shared.Dtos;
 using LMS.Shared.Dtos.StudentDtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LMS.API.Controllers
@@ -19,6 +20,7 @@ namespace LMS.API.Controllers
         }
         
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<IEnumerable<StudentDto>>> GetAllStudents()
         {
             var students = await studentService.GetAllAsync();
@@ -26,6 +28,7 @@ namespace LMS.API.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize]
         public async Task<ActionResult<StudentDto>> GetStudentById(Guid id)
         {
             var student = await studentService.GetByIdAsync(id);
@@ -33,6 +36,7 @@ namespace LMS.API.Controllers
         }
 
         [HttpGet("user/{userId}")]
+        [Authorize]
         public async Task<ActionResult<StudentDto>> GetStudentByUserId(string userId)
         {
             var student = await studentService.GetByUserIdAsync(userId);
@@ -40,6 +44,7 @@ namespace LMS.API.Controllers
         }
 
         [HttpGet("studentid/{studentId}")]
+        [Authorize]
         public async Task<ActionResult<StudentDto>> GetStudentByStudentId(string studentId)
         {
             var student = await studentService.GetByStudentIdAsync(studentId);
@@ -47,6 +52,7 @@ namespace LMS.API.Controllers
         }
 
         [HttpPut("{id}/profile")]
+        [Authorize(Roles = "Student,Admin")]
         public async Task<ActionResult<StudentDto>> UpdateStudentProfile(Guid id, [FromBody] UpdateStudentProfileDto updateProfileDto)
         {
             var student = await studentService.UpdateProfileAsync(id, updateProfileDto);
@@ -54,6 +60,7 @@ namespace LMS.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult> DeleteStudent(Guid id)
         {
             await studentService.DeleteAsync(id);

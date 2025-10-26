@@ -1,5 +1,6 @@
 ﻿using LMS.Logic.Services.Interfaces;
 using LMS.Shared.Dtos.EntityDtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LMS.API.Controllers
@@ -31,6 +32,7 @@ namespace LMS.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<CategoryDto>> CreateCategory(CategoryCreateDto dto)
         {
             try
@@ -45,6 +47,7 @@ namespace LMS.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<CategoryDto>> UpdateCategory(int id, CategoryUpdateDto dto)
         {
             try
@@ -60,6 +63,7 @@ namespace LMS.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteCategory(int id)
         {
             try

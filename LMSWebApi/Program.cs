@@ -159,6 +159,7 @@ namespace LMSWebApi
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
+
             }
 
             app.UseHttpsRedirection();

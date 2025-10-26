@@ -49,25 +49,24 @@ namespace LMS.Logic.Services
             return courseDto;
         }
 
-        public async Task<CourseDto> CreateCourseAsync(CourseCreateDto dto,string userId)
+        public async Task<CourseDto> CreateCourseAsync(CourseCreateDto dto, string userId)
         {
             var category = await categoryRepository.GetByIdAsync(dto.CategoryId);
             if (category == null)
                 throw new ArgumentException("Category not found");
 
-            // UserId bo'yicha Teacher ni topish
             var teacher = await teacherRepository.GetByUserIdAsync(userId);
             if (teacher == null)
-                throw new ArgumentException("Teacher profile not found for this user");
+                throw new ArgumentException("Teacher profile not found");
 
             var course = mapper.Map<Course>(dto);
             course.Id = Guid.NewGuid();
             course.TeacherId = teacher.Id;
             course.CreatedAt = DateTime.UtcNow;
-            course.IsPublished = false;
+            course.IsPublished = dto.IsPublished;
 
             var createdCourse = await courseRepository.AddAsync(course);
-            return mapper.Map<CourseDto>(createdCourse);
+            return await GetCourseByIdAsync(createdCourse.Id);
         }
 
         public async Task<CourseDto?> UpdateCourseAsync(Guid id, CourseUpdateDto dto, string userId)
