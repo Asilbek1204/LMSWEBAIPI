@@ -1,5 +1,4 @@
 using LMS.Data;
-using LMS.Data.Entities;
 using LMS.Data.Repositories;
 using LMS.Data.Repositories.Interfaces;
 using LMS.Logic.Helpers;
@@ -29,10 +28,6 @@ namespace LMSWebApi
             // PostgreSQL DbContext
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(connectionString));
-
-            // ❌ IDENTITY NI O'CHIRDIK - Endi kerak emas!
-            // builder.Services.AddIdentity<User, IdentityRole>(...) - BU KERAK EMAS
-
             // Controllers
             builder.Services.AddControllers();
 

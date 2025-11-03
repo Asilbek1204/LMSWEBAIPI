@@ -1,5 +1,6 @@
 ﻿using LMS.Data.Entities;
 using LMS.Data.Repositories.Interfaces;
+using LMS.Shared.Dtos.PaginationDtos;
 using Microsoft.EntityFrameworkCore;
 
 namespace LMS.Data.Repositories
@@ -41,14 +42,8 @@ namespace LMS.Data.Repositories
         public async Task<bool> ExistsAsync(Guid id)
             => await context.Courses.AnyAsync(c => c.Id == id);
 
-        public async Task<(IEnumerable<Course> Items, int TotalCount)> GetAllAsync(
-            string? title = null,
-            Guid? teacherId = null,
-            int? categoryId = null,
-            string? sortBy = "title",
-            bool sortDescending = false,
-            int page = 1,
-            int pageSize = 10)
+        //Expression pridecate
+        public async Task<(IEnumerable<Course> Items, int TotalCount)> GetAllAsync(CourseFilterParams filterParams)
         {
             var query = context.Courses
                 .Include(c => c.Category)
@@ -57,17 +52,17 @@ namespace LMS.Data.Repositories
                 .AsQueryable();
 
             // Filtering
-            if (!string.IsNullOrEmpty(title))
-                query = query.Where(c => c.Title.ToLower().Contains(title.ToLower()));
+            if (!string.IsNullOrEmpty(filterParams.Title))
+                query = query.Where(c => c.Title.ToLower().Contains(filterParams.Title.ToLower()));
 
-            if (teacherId.HasValue)
-                query = query.Where(c => c.TeacherId == teacherId);
+            if (filterParams.TeacherId.HasValue)
+                query = query.Where(c => c.TeacherId == filterParams.TeacherId);
 
-            if (categoryId.HasValue)
-                query = query.Where(c => c.CategoryId == categoryId);
+            if (filterParams.CategoryId.HasValue)
+                query = query.Where(c => c.CategoryId == filterParams.CategoryId);
 
             // Sorting
-            query = (sortBy?.ToLower(), sortDescending) switch
+            query = (filterParams.SortBy?.ToLower(), filterParams.SortDescending) switch
             {
                 ("price", false) => query.OrderBy(c => c.Price),
                 ("price", true) => query.OrderByDescending(c => c.Price),
@@ -81,8 +76,8 @@ namespace LMS.Data.Repositories
 
             var totalCount = await query.CountAsync();
             var items = await query
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
+                .Skip((filterParams.Page - 1) * filterParams.PageSize)
+                .Take(filterParams.PageSize)
                 .ToListAsync();
 
             return (items, totalCount);

@@ -1,4 +1,5 @@
 ﻿using LMS.Data.Entities;
+using LMS.Shared.Dtos.PaginationDtos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,14 +17,7 @@ namespace LMS.Data.Repositories.Interfaces
         Task DeleteAsync(Course entity);
         Task<bool> ExistsAsync(Guid id);
 
-        Task<(IEnumerable<Course> Items, int TotalCount)> GetAllAsync(
-            string? title = null,
-            Guid? teacherId = null,
-            int? categoryId = null,
-            string? sortBy = "title",
-            bool sortDescending = false,
-            int page = 1,
-            int pageSize = 10);
+        Task<(IEnumerable<Course> Items, int TotalCount)> GetAllAsync(CourseFilterParams filterParams);
         Task<IEnumerable<Course>> GetCoursesByTeacherAsync(Guid teacherId);
         Task<IEnumerable<Course>> GetCoursesByCategoryAsync(int categoryId);
         Task<Course?> GetCourseWithDetailsAsync(Guid id);

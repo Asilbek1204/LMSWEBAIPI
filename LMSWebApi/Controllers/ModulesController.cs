@@ -35,74 +35,41 @@ namespace LMS.API.Controllers
         [Authorize(Roles = "Teacher,Admin")]
         public async Task<ActionResult<ModuleDto>> CreateModule(ModuleCreateDto dto)
         {
-            try
-            {
                 var teacherId = Guid.NewGuid(); // Temporary - auth qilganda o'zgartirish kerak
                 var module = await moduleService.CreateModuleAsync(dto, teacherId);
                 return CreatedAtAction(nameof(GetModule), new { id = module.Id }, module);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { error = ex.Message });
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
+            
         }
 
         [HttpPut("{id}")]
         [Authorize(Roles = "Teacher,Admin")]
         public async Task<ActionResult<ModuleDto>> UpdateModule(int id, ModuleUpdateDto dto)
         {
-            try
-            {
                 var teacherId = Guid.NewGuid(); // Temporary - auth qilganda o'zgartirish kerak
                 var module = await moduleService.UpdateModuleAsync(id, dto, teacherId);
                 if (module == null) return NotFound();
                 return Ok(module);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
+            
         }
 
         [HttpDelete("{id}")]
         [Authorize(Roles = "Teacher,Admin")]
         public async Task<IActionResult> DeleteModule(int id)
         {
-            try
-            {
                 var teacherId = Guid.NewGuid(); // Temporary - auth qilganda o'zgartirish kerak
                 var result = await moduleService.DeleteModuleAsync(id, teacherId);
                 if (!result) return NotFound();
                 return NoContent();
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
         }
 
         [HttpPost("{courseId}/reorder")]
         [Authorize(Roles = "Teacher,Admin")]
         public async Task<IActionResult> ReorderModules(Guid courseId, [FromBody] ReorderRequest request)
         {
-            try
-            {
                 var teacherId = Guid.NewGuid(); // Temporary - auth qilganda o'zgartirish kerak
                 await moduleService.ReorderModulesAsync(courseId, request.FromOrder, request.ToOrder, teacherId);
                 return Ok(new { message = "Modules reordered successfully" });
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { error = ex.Message });
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
+           
         }
 
         public class ReorderRequest

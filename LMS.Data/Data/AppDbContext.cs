@@ -7,7 +7,6 @@ namespace LMS.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-        // Database jadvallari
         public DbSet<User> Users { get; set; }
         public DbSet<Student> Students { get; set; }
         public DbSet<Teacher> Teachers { get; set; }
@@ -21,7 +20,6 @@ namespace LMS.Data
             base.OnModelCreating(builder);
 
             // User -> Teacher: One-to-One
-            // Bir user faqat bitta teacher profile ga ega bo'ladi
             builder.Entity<Teacher>()
                 .HasOne(t => t.User)                      // Teacher bir User ga bog'lanadi
                 .WithOne(u => u.TeacherProfile)           // User bir TeacherProfile ga bog'lanadi  
@@ -29,37 +27,30 @@ namespace LMS.Data
                 .OnDelete(DeleteBehavior.Cascade);        // User o'chirilsa, Teacher ham o'chadi
 
             // User -> Student: One-to-One  
-            // Bir user faqat bitta student profile ga ega bo'ladi
             builder.Entity<Student>()
                 .HasOne(s => s.User)                      // Student bir User ga bog'lanadi
                 .WithOne(u => u.StudentProfile)           // User bir StudentProfile ga bog'lanadi
                 .HasForeignKey<Student>(s => s.UserId)    // Bog'lanish UserId orqali amalga oshadi
                 .OnDelete(DeleteBehavior.Cascade);        // User o'chirilsa, Student ham o'chadi
 
-            // ==================== TEACHER BOG'LANISHLARI ====================
-
             // Teacher -> Course: One-to-Many
-            // Bir o'qituvchi ko'p kurslar yaratishi mumkin
             builder.Entity<Course>()
                 .HasOne(c => c.Teacher)                   // Course bir Teacher ga bog'lanadi
                 .WithMany(t => t.Courses)                 // Teacher ko'p Course lar ga bog'lanadi
                 .HasForeignKey(c => c.TeacherId)          // Bog'lanish TeacherId orqali
                 .OnDelete(DeleteBehavior.Restrict);       // Teacher o'chirilsa, Course lar o'chmaydi
 
-            // ==================== STUDENT BOG'LANISHLARI ====================
 
             // Student -> Enrollment: One-to-Many
-            // Bir o'quvchi ko'p kurslarga yozilishi mumkin
+
             builder.Entity<Enrollment>()
                 .HasOne(e => e.Student)                   // Enrollment bir Student ga bog'lanadi
                 .WithMany(s => s.Enrollments)             // Student ko'p Enrollment lar ga bog'lanadi
                 .HasForeignKey(e => e.StudentId)          // Bog'lanish StudentId orqali
                 .OnDelete(DeleteBehavior.Cascade);        // Student o'chirilsa, Enrollment lar ham o'chadi
 
-            // ==================== COURSE BOG'LANISHLARI ====================
 
             // Course -> Category: Many-to-One
-            // Ko'p kurslar bir kategoriyaga tegishli bo'lishi mumkin
             builder.Entity<Course>()
                 .HasOne(c => c.Category)                  // Course bir Category ga bog'lanadi
                 .WithMany(cat => cat.Courses)             // Category ko'p Course lar ga bog'lanadi
@@ -67,7 +58,6 @@ namespace LMS.Data
                 .OnDelete(DeleteBehavior.Restrict);       // Category o'chirilsa, Course lar o'chmaydi
 
             // Course -> Enrollment: One-to-Many
-            // Bir kursga ko'p o'quvchilar yozilishi mumkin
             builder.Entity<Enrollment>()
                 .HasOne(e => e.Course)                    // Enrollment bir Course ga bog'lanadi
                 .WithMany(c => c.Enrollments)             // Course ko'p Enrollment lar ga bog'lanadi
@@ -75,14 +65,12 @@ namespace LMS.Data
                 .OnDelete(DeleteBehavior.Cascade);        // Course o'chirilsa, Enrollment lar ham o'chadi
 
             // Course -> Module: One-to-Many
-            // Bir kursda ko'p modullar (darslar) bo'lishi mumkin
             builder.Entity<Module>()
                 .HasOne(m => m.Course)                    // Module bir Course ga bog'lanadi
                 .WithMany(c => c.Modules)                 // Course ko'p Module lar ga bog'lanadi
                 .HasForeignKey(m => m.CourseId)           // Bog'lanish CourseId orqali
                 .OnDelete(DeleteBehavior.Cascade);        // Course o'chirilsa, Module lar ham o'chadi
 
-            // ==================== UNIQUE CONSTRAINTS ====================
             // Har bir email va username unique bo'lishi kerak
             builder.Entity<User>()
                 .HasIndex(u => u.Email)

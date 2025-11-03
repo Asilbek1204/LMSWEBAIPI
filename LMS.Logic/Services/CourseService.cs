@@ -1,14 +1,9 @@
 ﻿using AutoMapper;
 using LMS.Data.Entities;
-using LMS.Data.Repositories;
 using LMS.Data.Repositories.Interfaces;
 using LMS.Logic.Services.Interfaces;
 using LMS.Shared.Dtos.EntityDtos;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using LMS.Shared.Dtos.PaginationDtos;
 
 namespace LMS.Logic.Services
 {
@@ -19,20 +14,18 @@ namespace LMS.Logic.Services
             ITeacherRepository teacherRepository) : ICourseService
     {
 
-        public async Task<(IEnumerable<CourseDto> Items, int TotalCount)> GetAllCoursesAsync(
-            string? title = null,
-            Guid? teacherId = null,
-            int? categoryId = null,
-            string? sortBy = "title",
-            bool sortDescending = false,
-            int page = 1,
-            int pageSize = 10)
+        public async Task<PagedResult<CourseDto>> GetAllCoursesAsync(CourseFilterParams filterParams)
         {
-            var (courses, totalCount) = await courseRepository.GetAllAsync(
-                title, teacherId, categoryId, sortBy, sortDescending, page, pageSize);
-
+            var (courses, totalCount) = await courseRepository.GetAllAsync(filterParams);
             var courseDtos = mapper.Map<IEnumerable<CourseDto>>(courses);
-            return (courseDtos, totalCount);
+
+            return new PagedResult<CourseDto>
+            {
+                Items = courseDtos,
+                TotalCount = totalCount,
+                Page = filterParams.Page,
+                PageSize = filterParams.PageSize
+            };
         }
 
         public async Task<CourseDto?> GetCourseByIdAsync(Guid id)

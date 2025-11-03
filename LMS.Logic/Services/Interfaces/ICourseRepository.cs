@@ -1,4 +1,5 @@
 ﻿using LMS.Shared.Dtos.EntityDtos;
+using LMS.Shared.Dtos.PaginationDtos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,14 +10,7 @@ namespace LMS.Logic.Services.Interfaces
 {
     public interface ICourseService
     {
-        Task<(IEnumerable<CourseDto> Items, int TotalCount)> GetAllCoursesAsync(
-            string? title = null,
-            Guid? teacherId = null,
-            int? categoryId = null,
-            string? sortBy = "title",
-            bool sortDescending = false,
-            int page = 1,
-            int pageSize = 10);
+        Task<PagedResult<CourseDto>> GetAllCoursesAsync(CourseFilterParams filterParams);
 
         Task<CourseDto?> GetCourseByIdAsync(Guid id);
         Task<CourseDto> CreateCourseAsync(CourseCreateDto dto, string userId);

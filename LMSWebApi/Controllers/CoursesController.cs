@@ -1,6 +1,7 @@
 ﻿using LMS.Logic.Services;
 using LMS.Logic.Services.Interfaces;
 using LMS.Shared.Dtos.EntityDtos;
+using LMS.Shared.Dtos.PaginationDtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -12,26 +13,10 @@ namespace LMS.API.Controllers
     public class CoursesController(ICourseService courseService,ITeacherService teacherService) : BaseController
     {
         [HttpGet]
-        public async Task<ActionResult> GetCourses(
-             [FromQuery] string? title = null,
-             [FromQuery] Guid? teacherId = null,
-             [FromQuery] int? categoryId = null,
-             [FromQuery] string? sortBy = "title",
-             [FromQuery] bool sortDescending = false,
-             [FromQuery] int page = 1,
-             [FromQuery] int pageSize = 10)
+        public async Task<ActionResult<PagedResult<CourseDto>>> GetCourses([FromQuery] CourseFilterParams filterParams)
         {
-            var (courses, totalCount) = await courseService.GetAllCoursesAsync(
-                title, teacherId, categoryId, sortBy, sortDescending, page, pageSize);
-
-            return Ok(new
-            {
-                Items = courses,
-                TotalCount = totalCount,
-                Page = page,
-                PageSize = pageSize,
-                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
-            });
+            var result = await courseService.GetAllCoursesAsync(filterParams);
+            return Ok(result);
         }
 
         [HttpGet("{id}")]
@@ -42,7 +27,7 @@ namespace LMS.API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Teacher,Admin")]
+        //[Authorize(Roles = "Teacher,Admin")]
         public async Task<ActionResult<CourseDto>> CreateCourse(CourseCreateDto dto)
         {
             // Faqat 1 qator - BaseController dan GetCurrentUserId() ishlatish
